@@ -80,7 +80,7 @@ def main():
         application = DebugApplication(handlers)
     else:
         application = tornado.web.Application(handlers)
-    application.listen(8800)
+    application.listen(8888)
     tornado.ioloop.IOLoop.instance().start()
 
 
