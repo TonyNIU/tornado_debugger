@@ -38,8 +38,8 @@ class DebugApplication(tornado.web.Application):
         self.debugger = DebuggedApplication(self, evalex=True)
         self.wsgi_container = WSGIContainer(self.debugger)
 
-    def start_request(self, connection):
-        return RequestDispatcher(self, connection)
+    def start_request(self, server_conn, request_conn):
+        return RequestDispatcher(self, request_conn)
 
     def render_exception(self):
         traceback = get_current_traceback()
