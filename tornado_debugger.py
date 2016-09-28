@@ -17,39 +17,36 @@ options.parse_command_line()
 
 
 class BaseHandler(tornado.web.RequestHandler):
-    def write_error(self, status_code, **kwargs):
+    debug_application = None
+    wsgi_container = None
+
+    def initialize(self):
         if options.debug:
-            html = self.application.render_exception()
-            self.write(html.encode('utf-8', 'replace'))
+            if not self.debug_application:
+                self.__class__.debug_application = DebuggedApplication(self.application, evalex=True)
+                self.__class__.wsgi_container = WSGIContainer(self.debug_application)
+
+            if '__debugger__' in self.request.uri:
+                return self.wsgi_container(self.request)
         else:
-            super(BaseHandler, self).write_error(status_code, **kwargs)
-
-
-class RequestDispatcher(tornado.web._RequestDispatcher):
-    def set_request(self, request):
-        super(RequestDispatcher, self).set_request(request)
-        if '__debugger__' in request.uri:
-            return self.application.wsgi_container(request)
-
-
-class DebugApplication(tornado.web.Application):
-    def __init__(self, *args, **kwargs):
-        super(DebugApplication, self).__init__(*args, **kwargs)
-        self.debugger = DebuggedApplication(self, evalex=True)
-        self.wsgi_container = WSGIContainer(self.debugger)
-
-    def start_request(self, server_conn, request_conn):
-        return RequestDispatcher(self, request_conn)
+            super(BaseHandler, self).initialize()
 
     def render_exception(self):
         traceback = get_current_traceback()
 
         for frame in traceback.frames:
-            self.debugger.frames[frame.id] = frame
-        self.debugger.tracebacks[traceback.id] = traceback
+            self.debug_application.frames[frame.id] = frame
+        self.debug_application.tracebacks[traceback.id] = traceback
 
         return traceback.render_full(evalex=True,
-                                     secret=self.debugger.secret)
+                                     secret=self.debug_application.secret)
+
+    def write_error(self, status_code, **kwargs):
+        if options.debug:
+            html = self.render_exception()
+            self.write(html.encode('utf-8', 'replace'))
+        else:
+            super(BaseHandler, self).write_error(status_code, **kwargs)
 
 
 class IndexHandler(BaseHandler):
@@ -60,7 +57,7 @@ class IndexHandler(BaseHandler):
 class AsyncHandler(BaseHandler):
     @coroutine
     def get(self):
-        resp = yield AsyncHTTPClient().fetch("http://cpython.net")
+        resp = yield AsyncHTTPClient().fetch("http://www.baidu.com")
         self.write(resp.body)
 
 
@@ -76,10 +73,7 @@ def main():
         ('/async$', AsyncHandler),
         ('/error$', ErrorHandler),
     ]
-    if options.debug:
-        application = DebugApplication(handlers)
-    else:
-        application = tornado.web.Application(handlers)
+    application = tornado.web.Application(handlers)
     application.listen(8888)
     tornado.ioloop.IOLoop.instance().start()
 
