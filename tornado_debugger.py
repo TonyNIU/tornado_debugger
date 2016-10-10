@@ -1,17 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
+
 import tornado.ioloop
 import tornado.web
 import tornado.wsgi
-from lib.mail import Mail
 from tornado.gen import coroutine
 from tornado.httpclient import AsyncHTTPClient
 from tornado.options import options, define
 from tornado.wsgi import WSGIContainer
+from tornado.template import Loader
 from werkzeug.debug import DebuggedApplication
 from werkzeug.debug.tbtools import get_current_traceback
 
+from lib.mail import Mail
 from lib.debug import get_debug_context
 from settings import EXCEPTION_REPORT_SMTP, EXCEPTION_REPORT_PASSWORD, EXCEPTION_REPORT_ACCOUNT, \
     EXCEPTION_REPORT_RECEIVERS, EXCEPTION_DEBUGGABLE
@@ -67,7 +70,8 @@ class BaseHandler(tornado.web.RequestHandler):
             else:
                 debug_url += "?debugging=debugging"
             context["debug_url"] = debug_url if EXCEPTION_DEBUGGABLE else ""
-            html = self.render_string("templates/error.html", **context)
+            path = os.path.abspath(os.path.join(os.path.dirname(__file__), "templates"))
+            html = Loader(path).load("error.html").generate(**context)
 
             mail = Mail(EXCEPTION_REPORT_SMTP, EXCEPTION_REPORT_ACCOUNT, EXCEPTION_REPORT_PASSWORD)
             subject = repr(v) if v else "代码异常"
@@ -82,7 +86,7 @@ class BaseHandler(tornado.web.RequestHandler):
         exc_info = kwargs["exc_info"]
         if options.debug and EXCEPTION_DEBUGGABLE:
             if self.get_argument("debugging", "") != "debugging":
-                self.alarm_exception(exc_info)
+                tornado.ioloop.IOLoop.current().add_callback(self.alarm_exception, exc_info)
                 super(BaseHandler, self).write_error(status_code, **kwargs)
             else:
                 html = self.render_exception()
@@ -105,7 +109,9 @@ class AsyncHandler(BaseHandler):
 
 class ErrorHandler(BaseHandler):
     def get(self):
-        raise Exception("测试")
+        a = 1
+        b = 2
+        c = a / b
         self.write("hello world")
 
 

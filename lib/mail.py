@@ -34,9 +34,9 @@ class Mail(object):
         发送邮件
         :param subject: 标题
         :param content: 内容
-        :param tolist: 收件人列表
-        :param cclist: 抄送人列表
-        :param plugins: 附件列表
+        :patolist: 收件人列表
+        @cclist: 抄送人列表
+        @plugins: 附件列表
         return: 是否发送成功
         """
         # 构造邮件消息

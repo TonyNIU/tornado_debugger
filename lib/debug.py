@@ -3,7 +3,6 @@
 """
 debug 工具
 """
-import sys
 
 # 保存抛出的异常，相同的异常不再记录，发送日志
 EXCEPTION_CACHE = set()

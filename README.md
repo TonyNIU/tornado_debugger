@@ -1,4 +1,6 @@
 # Tornado debugger 工具
+抛出异常时，发送邮件到开发人员邮箱，记录调用栈和局部变量，
+
 [Werkzeug](http://werkzeug.pocoo.org/) 提供一个交互式的debugger工具可以很方便的显示异常发生时的调用栈和上下文, 可以在 traceback 的上下文环境里执行语句来debug, 使调试更方便.
 
 tornado_debugger 集成Werkzeug debugger工具到Tornado框架中, 可以在网页上方便地调试 Tornado.  
